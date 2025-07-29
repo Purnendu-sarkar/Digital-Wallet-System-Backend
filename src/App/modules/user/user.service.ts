@@ -2,9 +2,9 @@ import { IUser } from "./user.interface";
 import { User } from "./user.model";
 
 const createUser = async (payload: Partial<IUser>) => {
-     if (!payload) {
-    throw new Error('Payload is required to create user');
-  }
+  // if (!payload) {
+  //   throw new Error('Payload is required to create user');
+  // }
   const { name, email, role } = payload;
 
   const user = await User.create({
@@ -12,7 +12,7 @@ const createUser = async (payload: Partial<IUser>) => {
     email,
     role: role || "USER",
     wallet: {
-      balance: 50, 
+      balance: 50,
       isBlocked: false,
     },
     agentApprovalStatus: role === "AGENT" ? "PENDING" : undefined,

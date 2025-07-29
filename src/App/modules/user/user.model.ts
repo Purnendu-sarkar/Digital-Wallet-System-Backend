@@ -48,7 +48,6 @@ const userSchema = new Schema<IUser>(
     agentApprovalStatus: {
       type: String,
       enum: ["PENDING", "APPROVED", "SUSPENDED"],
-      default: "PENDING",
       required: function () {
         return this.role === Role.AGENT;
       },
