@@ -6,6 +6,7 @@ import { AuthServices } from "./auth.service";
 
 import AppError from "../../errorHelpers/AppError";
 import { setAuthCookie } from "../../utils/setCookie";
+import { envVars } from "../../config/env";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const credentialsLogin = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -39,7 +40,47 @@ const getNewAccessToken = catchAsync(async (req: Request, res: Response, next: N
   });
 });
 
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const logout = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: envVars.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: envVars.NODE_ENV === "production",
+    sameSite: "lax",
+  });
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "User Logged Out Successfully",
+    data: null,
+  });
+});
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const resetPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const { oldPassword, newPassword } = req.body;
+  const decodedToken = req.user;
+
+  await AuthServices.resetPassword(oldPassword, newPassword, decodedToken);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Password Changed Successfully",
+    data: null,
+  });
+});
+
+
 export const AuthControllers = {
   credentialsLogin,
   getNewAccessToken,
+  logout,
+  resetPassword
 };

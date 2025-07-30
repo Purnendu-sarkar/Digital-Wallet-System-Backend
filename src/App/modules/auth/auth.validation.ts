@@ -13,3 +13,18 @@ export const loginZodSchema = z.object({
     .regex(/^(?=.*[!@#$%^&*])/, { message: "Password must contain at least 1 special character." })
     .regex(/^(?=.*\d)/, { message: "Password must contain at least 1 number." }),
 });
+
+export const resetPasswordZodSchema = z.object({
+  oldPassword: z
+    .string({ invalid_type_error: "Old password must be string" })
+    .min(8, { message: "Old password must be at least 8 characters long." })
+    .regex(/^(?=.*[A-Z])/, { message: "Old password must contain at least 1 uppercase letter." })
+    .regex(/^(?=.*[!@#$%^&*])/, { message: "Old password must contain at least 1 special character." })
+    .regex(/^(?=.*\d)/, { message: "Old password must contain at least 1 number." }),
+  newPassword: z
+    .string({ invalid_type_error: "New password must be string" })
+    .min(8, { message: "New password must be at least 8 characters long." })
+    .regex(/^(?=.*[A-Z])/, { message: "New password must contain at least 1 uppercase letter." })
+    .regex(/^(?=.*[!@#$%^&*])/, { message: "New password must contain at least 1 special character." })
+    .regex(/^(?=.*\d)/, { message: "New password must contain at least 1 number." }),
+});
