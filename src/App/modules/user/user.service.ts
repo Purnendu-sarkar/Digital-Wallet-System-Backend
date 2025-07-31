@@ -26,6 +26,7 @@ const createUser = async (payload: Partial<IUser>) => {
   const user = await User.create({
     email,
     password: hashedPassword,
+    role: role || Role.USER,
     auths: [authProvider],
     wallet: {
       balance: 50,
