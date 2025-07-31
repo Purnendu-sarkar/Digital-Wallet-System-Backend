@@ -176,15 +176,32 @@ const getTransactionHistory = async (userId: string) => {
     if (!user || user.isDeleted) {
         throw new AppError(httpStatus.NOT_FOUND, "User not found or deleted");
     }
-    const transactions = await Transaction.find({
-        $or: [{ sender: userId }, { receiver: userId }, { agent: userId }],
-    })
-        .populate("sender", "name email")
-        .populate("receiver", "name email")
-        .populate("agent", "name email")
-        .sort({ createdAt: -1 });
+    let transactions;
+    if (user.role === Role.ADMIN) {
+        transactions = await Transaction.find({})
+            .populate("sender", "name email")
+            .populate("receiver", "name email")
+            .populate("agent", "name email")
+            .sort({ createdAt: -1 });
+    } else {
+        transactions = await Transaction.find({
+            $or: [{ sender: userId }, { receiver: userId }, { agent: userId }],
+        })
+            .populate("sender", "name email")
+            .populate("receiver", "name email")
+            .populate("agent", "name email")
+            .sort({ createdAt: -1 });
+    }
 
-    return transactions;
+    const totalTransactions = transactions.length;
+
+    return {
+        meta: {
+            total: totalTransactions,
+        },
+        data: transactions,
+
+    };
 };
 
 export const TransactionServices = {
