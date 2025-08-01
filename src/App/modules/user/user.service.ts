@@ -12,6 +12,10 @@ const createUser = async (payload: Partial<IUser>) => {
   // }
   const { email, password, role, ...rest } = payload;
 
+  if (role === Role.ADMIN) {
+    throw new AppError(httpStatus.FORBIDDEN, "Cannot create user with ADMIN role manually");
+  }
+
   const isUserExist = await User.findOne({ email });
   if (isUserExist) {
     throw new AppError(httpStatus.BAD_REQUEST, "User Already Exist");

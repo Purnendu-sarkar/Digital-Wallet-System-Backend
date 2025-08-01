@@ -69,6 +69,9 @@ const topUp = async (userId: string, amount: number) => {
     if (user.wallet.isBlocked) {
         throw new AppError(httpStatus.BAD_REQUEST, "Wallet is blocked");
     }
+    if (user.role === Role.AGENT && user.agentApprovalStatus !== "APPROVED") {
+        throw new AppError(httpStatus.FORBIDDEN, "Agent is not approved for top-up");
+    }
 
     await checkTransactionLimits(userId, amount, user.role, TransactionType.TOP_UP);
 
@@ -100,6 +103,9 @@ const withdraw = async (userId: string, amount: number) => {
     }
     if (user.wallet.isBlocked) {
         throw new AppError(httpStatus.BAD_REQUEST, "Wallet is blocked");
+    }
+    if (user.role === Role.AGENT && user.agentApprovalStatus !== "APPROVED") {
+        throw new AppError(httpStatus.FORBIDDEN, "Agent is not approved for withdrawal");
     }
     if (user.wallet.balance < amount) {
         throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance");
