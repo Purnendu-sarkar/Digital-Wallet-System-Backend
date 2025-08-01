@@ -1,13 +1,13 @@
+import { envVars } from "../../config/env";
 import httpStatus from "http-status-codes";
 import AppError from "../../errorHelpers/AppError";
 import { User } from "../user/user.model";
 import { TransactionStatus, TransactionType } from "./transaction.interface";
 import { Role } from "../user/user.interface";
 import { Transaction } from "./transaction.model";
-import { envVars } from "../../config/env";
+import moment from "moment";
 
-
-
+// Helper function to calculate fees and commissions
 const calculateFeeAndCommission = (amount: number, type: TransactionType) => {
     const feePercentage = Number(envVars.TRANSACTION_FEE_PERCENTAGE) / 100;
     const commissionPercentage = Number(envVars.AGENT_COMMISSION_PERCENTAGE) / 100;
@@ -24,6 +24,38 @@ const calculateFeeAndCommission = (amount: number, type: TransactionType) => {
     return { fee, commission };
 };
 
+// Helper function to check transaction limits
+const checkTransactionLimits = async (userId: string, amount: number, role: Role, type: TransactionType) => {
+    const dailyLimit = role === Role.AGENT ? Number(envVars.DAILY_AGENT_LIMIT) : Number(envVars.DAILY_USER_LIMIT);
+    const monthlyLimit = role === Role.AGENT ? Number(envVars.MONTHLY_AGENT_LIMIT) : Number(envVars.MONTHLY_USER_LIMIT);
+
+    const todayStart = moment().startOf("day").toDate();
+    const monthStart = moment().startOf("month").toDate();
+
+    const dailyTransactions = await Transaction.find({
+        $or: [{ sender: userId }, { agent: userId }],
+        type,
+        createdAt: { $gte: todayStart },
+        status: TransactionStatus.COMPLETED,
+    });
+
+    const monthlyTransactions = await Transaction.find({
+        $or: [{ sender: userId }, { agent: userId }],
+        type,
+        createdAt: { $gte: monthStart },
+        status: TransactionStatus.COMPLETED,
+    });
+
+    const dailyTotal = dailyTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+    const monthlyTotal = monthlyTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+
+    if (dailyTotal + amount > dailyLimit) {
+        throw new AppError(httpStatus.BAD_REQUEST, `Daily ${type} limit exceeded`);
+    }
+    if (monthlyTotal + amount > monthlyLimit) {
+        throw new AppError(httpStatus.BAD_REQUEST, `Monthly ${type} limit exceeded`);
+    }
+};
 
 const topUp = async (userId: string, amount: number) => {
     const user = await User.findById(userId);
@@ -36,6 +68,8 @@ const topUp = async (userId: string, amount: number) => {
     if (user.wallet.isBlocked) {
         throw new AppError(httpStatus.BAD_REQUEST, "Wallet is blocked");
     }
+
+    await checkTransactionLimits(userId, amount, user.role, TransactionType.TOP_UP);
 
     user.wallet.balance += amount;
     await user.save();
@@ -66,6 +100,8 @@ const withdraw = async (userId: string, amount: number) => {
     if (user.wallet.balance < amount) {
         throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance");
     }
+
+    await checkTransactionLimits(userId, amount, user.role, TransactionType.WITHDRAW);
 
     user.wallet.balance -= amount;
     await user.save();
@@ -101,6 +137,8 @@ const sendMoney = async (senderId: string, receiverId: string, amount: number) =
     if (sender.wallet.balance < totalDeduction) {
         throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance including fee");
     }
+
+    await checkTransactionLimits(senderId, amount, sender.role, TransactionType.SEND_MONEY);
 
     sender.wallet.balance -= totalDeduction;
     receiver.wallet.balance += amount;
@@ -140,6 +178,8 @@ const cashIn = async (agentId: string, userId: string, amount: number) => {
     }
 
     const { commission } = calculateFeeAndCommission(amount, TransactionType.CASH_IN);
+
+    await checkTransactionLimits(agentId, amount, agent.role, TransactionType.CASH_IN);
 
     agent.wallet.balance -= amount;
     agent.wallet.balance += commission;
@@ -182,6 +222,8 @@ const cashOut = async (agentId: string, userId: string, amount: number) => {
     if (user.wallet.balance < totalDeduction) {
         throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance including fee");
     }
+
+    await checkTransactionLimits(agentId, amount, agent.role, TransactionType.CASH_OUT);
 
     user.wallet.balance -= totalDeduction;
     agent.wallet.balance += amount;

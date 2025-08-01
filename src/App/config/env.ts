@@ -20,6 +20,10 @@ interface EnvConfig {
     FRONTEND_URL: string
     TRANSACTION_FEE_PERCENTAGE: string;
     AGENT_COMMISSION_PERCENTAGE: string;
+    DAILY_USER_LIMIT: string;
+    MONTHLY_USER_LIMIT: string;
+    DAILY_AGENT_LIMIT: string; 
+    MONTHLY_AGENT_LIMIT: string;
 }
 
 const loadEnvVariables = (): EnvConfig => {
@@ -41,6 +45,10 @@ const loadEnvVariables = (): EnvConfig => {
         "FRONTEND_URL",
         "TRANSACTION_FEE_PERCENTAGE",
         "AGENT_COMMISSION_PERCENTAGE",
+        "DAILY_USER_LIMIT",
+        "MONTHLY_USER_LIMIT",
+        "DAILY_AGENT_LIMIT",
+        "MONTHLY_AGENT_LIMIT"
     ];
 
     requiredEnvVariables.forEach(key => {
@@ -68,6 +76,10 @@ const loadEnvVariables = (): EnvConfig => {
         FRONTEND_URL: process.env.FRONTEND_URL as string,
         TRANSACTION_FEE_PERCENTAGE: process.env.TRANSACTION_FEE_PERCENTAGE as string,
         AGENT_COMMISSION_PERCENTAGE: process.env.AGENT_COMMISSION_PERCENTAGE as string,
+        DAILY_USER_LIMIT: process.env.DAILY_USER_LIMIT as string,
+        MONTHLY_USER_LIMIT: process.env.MONTHLY_USER_LIMIT as string,
+        DAILY_AGENT_LIMIT: process.env.DAILY_AGENT_LIMIT as string,
+        MONTHLY_AGENT_LIMIT: process.env.MONTHLY_AGENT_LIMIT as string,
     };
 };
 
