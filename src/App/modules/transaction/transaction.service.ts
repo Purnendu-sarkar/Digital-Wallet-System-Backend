@@ -6,6 +6,7 @@ import { TransactionStatus, TransactionType } from "./transaction.interface";
 import { Role } from "../user/user.interface";
 import { Transaction } from "./transaction.model";
 import moment from "moment";
+import { sendConsoleNotification, sendWebhookNotification } from "../../utils/notify";
 
 // Helper function to calculate fees and commissions
 const calculateFeeAndCommission = (amount: number, type: TransactionType) => {
@@ -83,6 +84,9 @@ const topUp = async (userId: string, amount: number) => {
         commission: 0,
     });
 
+    await sendConsoleNotification(transaction);
+    await sendWebhookNotification(transaction);
+
     return transaction;
 };
 
@@ -114,6 +118,9 @@ const withdraw = async (userId: string, amount: number) => {
         fee: 0,
         commission: 0,
     });
+
+    await sendConsoleNotification(transaction);
+    await sendWebhookNotification(transaction);
 
     return transaction;
 };
@@ -154,6 +161,9 @@ const sendMoney = async (senderId: string, receiverId: string, amount: number) =
         type: TransactionType.SEND_MONEY,
         status: TransactionStatus.COMPLETED,
     });
+
+    await sendConsoleNotification(transaction);
+    await sendWebhookNotification(transaction);
 
     return transaction;
 };
@@ -196,6 +206,9 @@ const cashIn = async (agentId: string, userId: string, amount: number) => {
         type: TransactionType.CASH_IN,
         status: TransactionStatus.COMPLETED,
     });
+
+    await sendConsoleNotification(transaction);
+    await sendWebhookNotification(transaction);
 
     return transaction;
 };
@@ -240,6 +253,9 @@ const cashOut = async (agentId: string, userId: string, amount: number) => {
         type: TransactionType.CASH_OUT,
         status: TransactionStatus.COMPLETED,
     });
+
+    await sendConsoleNotification(transaction);
+    await sendWebhookNotification(transaction);
 
     return transaction;
 };
