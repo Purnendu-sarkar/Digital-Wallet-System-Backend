@@ -4,6 +4,7 @@ import httpStatus from "http-status-codes";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { AdminServices } from "./admin.service";
+import { envVars } from "../../config/env";
 
 const blockWallet = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.params.id;
@@ -66,10 +67,27 @@ const getPendingAgents = catchAsync(async (req: Request, res: Response, next: Ne
     });
 });
 
+const updateSystemParameters = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const { transactionFeePercentage, agentCommissionPercentage } = req.body;
+    process.env.TRANSACTION_FEE_PERCENTAGE = transactionFeePercentage?.toString() || envVars.TRANSACTION_FEE_PERCENTAGE;
+    process.env.AGENT_COMMISSION_PERCENTAGE = agentCommissionPercentage?.toString() || envVars.AGENT_COMMISSION_PERCENTAGE;
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "System parameters updated successfully",
+        data: {
+            transactionFeePercentage: Number(process.env.TRANSACTION_FEE_PERCENTAGE),
+            agentCommissionPercentage: Number(process.env.AGENT_COMMISSION_PERCENTAGE),
+        },
+    });
+});
+
 export const AdminControllers = {
     blockWallet,
     unblockWallet,
     approveAgent,
     suspendAgent,
     getPendingAgents,
+    updateSystemParameters,
 };

@@ -4,6 +4,26 @@ import { User } from "../user/user.model";
 import { TransactionStatus, TransactionType } from "./transaction.interface";
 import { Role } from "../user/user.interface";
 import { Transaction } from "./transaction.model";
+import { envVars } from "../../config/env";
+
+
+
+const calculateFeeAndCommission = (amount: number, type: TransactionType) => {
+    const feePercentage = Number(envVars.TRANSACTION_FEE_PERCENTAGE) / 100;
+    const commissionPercentage = Number(envVars.AGENT_COMMISSION_PERCENTAGE) / 100;
+    let fee = 0;
+    let commission = 0;
+
+    if ([TransactionType.SEND_MONEY, TransactionType.CASH_OUT].includes(type)) {
+        fee = amount * feePercentage;
+    }
+    if ([TransactionType.CASH_IN, TransactionType.CASH_OUT].includes(type)) {
+        commission = amount * commissionPercentage;
+    }
+
+    return { fee, commission };
+};
+
 
 const topUp = async (userId: string, amount: number) => {
     const user = await User.findById(userId);
@@ -74,11 +94,15 @@ const sendMoney = async (senderId: string, receiverId: string, amount: number) =
     if (sender.wallet.isBlocked || receiver.wallet.isBlocked) {
         throw new AppError(httpStatus.BAD_REQUEST, "Sender or receiver wallet is blocked");
     }
-    if (sender.wallet.balance < amount) {
-        throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance");
+
+    const { fee } = calculateFeeAndCommission(amount, TransactionType.SEND_MONEY);
+    const totalDeduction = amount + fee;
+
+    if (sender.wallet.balance < totalDeduction) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance including fee");
     }
 
-    sender.wallet.balance -= amount;
+    sender.wallet.balance -= totalDeduction;
     receiver.wallet.balance += amount;
     await sender.save();
     await receiver.save();
@@ -87,10 +111,10 @@ const sendMoney = async (senderId: string, receiverId: string, amount: number) =
         sender: sender._id,
         receiver: receiver._id,
         amount,
+        fee,
+        commission: 0,
         type: TransactionType.SEND_MONEY,
         status: TransactionStatus.COMPLETED,
-        fee: 0,
-        commission: 0,
     });
 
     return transaction;
@@ -115,7 +139,10 @@ const cashIn = async (agentId: string, userId: string, amount: number) => {
         throw new AppError(httpStatus.BAD_REQUEST, "Agent has insufficient balance");
     }
 
+    const { commission } = calculateFeeAndCommission(amount, TransactionType.CASH_IN);
+
     agent.wallet.balance -= amount;
+    agent.wallet.balance += commission;
     user.wallet.balance += amount;
     await agent.save();
     await user.save();
@@ -124,10 +151,10 @@ const cashIn = async (agentId: string, userId: string, amount: number) => {
         sender: user._id,
         agent: agent._id,
         amount,
+        fee: 0,
+        commission,
         type: TransactionType.CASH_IN,
         status: TransactionStatus.COMPLETED,
-        fee: 0,
-        commission: 0,
     });
 
     return transaction;
@@ -148,13 +175,17 @@ const cashOut = async (agentId: string, userId: string, amount: number) => {
     if (user.wallet.isBlocked) {
         throw new AppError(httpStatus.BAD_REQUEST, "User wallet is blocked");
     }
-    if (user.wallet.balance < amount) {
-        throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance");
+
+    const { fee, commission } = calculateFeeAndCommission(amount, TransactionType.CASH_OUT);
+    const totalDeduction = amount + fee;
+
+    if (user.wallet.balance < totalDeduction) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance including fee");
     }
 
-    user.wallet.balance -= amount;
+    user.wallet.balance -= totalDeduction;
     agent.wallet.balance += amount;
-
+    agent.wallet.balance += commission;
     await user.save();
     await agent.save();
 
@@ -162,10 +193,10 @@ const cashOut = async (agentId: string, userId: string, amount: number) => {
         sender: user._id,
         agent: agent._id,
         amount,
+        fee,
+        commission,
         type: TransactionType.CASH_OUT,
         status: TransactionStatus.COMPLETED,
-        fee: 0,
-        commission: 0,
     });
 
     return transaction;
@@ -194,10 +225,14 @@ const getTransactionHistory = async (userId: string) => {
     }
 
     const totalTransactions = transactions.length;
+    const totalCommission = user.role === Role.AGENT
+        ? transactions.reduce((sum, tx) => sum + (tx.commission || 0), 0)
+        : 0;
 
     return {
         meta: {
-            total: totalTransactions,
+            totalTransactions: totalTransactions,
+            totalCommission: user.role === Role.AGENT ? totalCommission : undefined,
         },
         data: transactions,
 
