@@ -15,6 +15,7 @@ export enum TransactionStatus {
 }
 
 export interface ITransaction {
+    _id?: Types.ObjectId;
     sender: Types.ObjectId;
     receiver?: Types.ObjectId;
     agent?: Types.ObjectId;

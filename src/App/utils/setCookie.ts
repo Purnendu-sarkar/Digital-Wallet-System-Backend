@@ -11,6 +11,7 @@ export const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
     res.cookie("accessToken", tokenInfo.accessToken, {
       httpOnly: true,
       secure: envVars.NODE_ENV === "production",
+      sameSite: "none",
     });
   }
 
@@ -18,6 +19,7 @@ export const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
     res.cookie("refreshToken", tokenInfo.refreshToken, {
       httpOnly: true,
       secure: envVars.NODE_ENV === "production",
+      sameSite: "none",
     });
   }
 };
