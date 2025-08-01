@@ -3,6 +3,7 @@ import { UserRoutes } from "../modules/user/user.route";
 import { AuthRoutes } from "../modules/auth/auth.route";
 import { AdminRoutes } from "../modules/admin/admin.route";
 import { TransactionRoutes } from "../modules/transaction/transaction.route";
+import { NotificationRoutes } from "../modules/notification/notification.route";
 
 export const router = Router();
 
@@ -22,6 +23,10 @@ const moduleRoutes = [
    {
     path: "/transaction",
     route: TransactionRoutes
+  },
+  {
+    path: "/notification",
+    route: NotificationRoutes
   },
 ];
 
