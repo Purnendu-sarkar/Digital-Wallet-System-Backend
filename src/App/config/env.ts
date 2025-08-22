@@ -22,8 +22,13 @@ interface EnvConfig {
     AGENT_COMMISSION_PERCENTAGE: string;
     DAILY_USER_LIMIT: string;
     MONTHLY_USER_LIMIT: string;
-    DAILY_AGENT_LIMIT: string; 
+    DAILY_AGENT_LIMIT: string;
     MONTHLY_AGENT_LIMIT: string;
+
+    REDIS_HOST: string;
+    REDIS_PORT: string;
+    REDIS_USERNAME: string;
+    REDIS_PASSWORD: string;
 }
 
 const loadEnvVariables = (): EnvConfig => {
@@ -48,7 +53,11 @@ const loadEnvVariables = (): EnvConfig => {
         "DAILY_USER_LIMIT",
         "MONTHLY_USER_LIMIT",
         "DAILY_AGENT_LIMIT",
-        "MONTHLY_AGENT_LIMIT"
+        "MONTHLY_AGENT_LIMIT",
+        "REDIS_HOST",
+        "REDIS_PORT",
+        "REDIS_USERNAME",
+        "REDIS_PASSWORD"
     ];
 
     requiredEnvVariables.forEach(key => {
@@ -80,6 +89,10 @@ const loadEnvVariables = (): EnvConfig => {
         MONTHLY_USER_LIMIT: process.env.MONTHLY_USER_LIMIT as string,
         DAILY_AGENT_LIMIT: process.env.DAILY_AGENT_LIMIT as string,
         MONTHLY_AGENT_LIMIT: process.env.MONTHLY_AGENT_LIMIT as string,
+        REDIS_HOST: process.env.REDIS_HOST as string,
+        REDIS_PORT: process.env.REDIS_PORT as string,
+        REDIS_USERNAME: process.env.REDIS_USERNAME as string,
+        REDIS_PASSWORD: process.env.REDIS_PASSWORD as string,
     };
 };
 

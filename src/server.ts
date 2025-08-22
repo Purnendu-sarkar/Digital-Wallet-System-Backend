@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import app from "./app";
 import { envVars } from "./App/config/env";
 import { seedAdmin } from "./App/utils/seedAdmin";
+import { connectRedis } from "./App/config/redis.config";
 
 let server: Server;
 
@@ -26,6 +27,7 @@ const startServer = async () => {
 
 
 (async () => {
+    await connectRedis()
     await startServer()
     await seedAdmin()
 })()
