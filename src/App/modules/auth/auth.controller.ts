@@ -25,6 +25,9 @@ const credentialsLogin = catchAsync(async (req: Request, res: Response, next: Ne
     if (!user) {
       return next(new AppError(httpStatus.UNAUTHORIZED, info.message || "Invalid credentials"));
     }
+    if (!user.isVerified) {
+    return next(new AppError(httpStatus.UNAUTHORIZED, "User is not verified"));
+  }
 
     const userTokens = createUserTokens(user);
     const { password: pass, ...rest } = user.toObject();
@@ -53,7 +56,7 @@ const credentialsLogin = catchAsync(async (req: Request, res: Response, next: Ne
   // });
 });
 
- 
+
 const getNewAccessToken = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const refreshToken = req.cookies.refreshToken;
   if (!refreshToken) {
@@ -72,16 +75,17 @@ const getNewAccessToken = catchAsync(async (req: Request, res: Response, next: N
 });
 
 
- 
+
 const logout = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   res.clearCookie("accessToken", {
     httpOnly: true,
-    secure: envVars.NODE_ENV === "production",
+    // secure: envVars.NODE_ENV === "production",
+    secure: true,
     sameSite: "lax",
   });
   res.clearCookie("refreshToken", {
     httpOnly: true,
-    secure: envVars.NODE_ENV === "production",
+    secure: true,
     sameSite: "lax",
   });
 
@@ -93,11 +97,11 @@ const logout = catchAsync(async (req: Request, res: Response, next: NextFunction
   });
 });
 
- 
+
 const resetPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { oldPassword, newPassword } = req.body;
   const decodedToken = req.user;
-  
+
 
   await AuthServices.resetPassword(oldPassword, newPassword, decodedToken as JwtPayload);
 

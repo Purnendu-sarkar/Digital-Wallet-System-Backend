@@ -11,7 +11,7 @@ import { IsActive } from "../modules/user/user.interface";
 
 export const checkAuth = (...authRoles: string[]) => async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const accessToken = req.headers.authorization?.replace("Bearer ", "");
+    const accessToken = req.headers.authorization?.replace("Bearer ", "") || req.cookies.accessToken;
 
     if (!accessToken) {
       throw new AppError(403, "No Token Received");

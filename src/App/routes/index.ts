@@ -4,6 +4,7 @@ import { AuthRoutes } from "../modules/auth/auth.route";
 import { AdminRoutes } from "../modules/admin/admin.route";
 import { TransactionRoutes } from "../modules/transaction/transaction.route";
 import { NotificationRoutes } from "../modules/notification/notification.route";
+import { OtpRoutes } from "../modules/otp/otp.route";
 
 export const router = Router();
 
@@ -16,17 +17,21 @@ const moduleRoutes = [
     path: "/auth",
     route: AuthRoutes
   },
-   {
+  {
     path: "/admin",
     route: AdminRoutes,
   },
-   {
+  {
     path: "/transaction",
     route: TransactionRoutes
   },
   {
     path: "/notification",
     route: NotificationRoutes
+  },
+  {
+    path: "/otp",
+    route: OtpRoutes
   },
 ];
 
