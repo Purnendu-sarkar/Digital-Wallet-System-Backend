@@ -59,3 +59,8 @@ export const updateUserZodSchema = z.object({
   isVerified: z.boolean({ message: "isVerified must be true or false" }).optional(),
   agentApprovalStatus: z.enum(["PENDING", "APPROVED", "SUSPENDED"]).optional(),
 });
+
+
+export const searchUserZodSchema = z.object({
+  searchTerm: z.string({ message: "Search term is required" }).min(1),
+});

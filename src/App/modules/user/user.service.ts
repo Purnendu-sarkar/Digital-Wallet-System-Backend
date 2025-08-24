@@ -133,10 +133,31 @@ const updateUser = async (userId: string, payload: Partial<IUser>, decodedToken:
   return newUpdatedUser;
 };
 
+const searchUsers = async (searchTerm: string) => {
+  if (!searchTerm) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Search term is required");
+  }
+
+  const users = await User.find({
+    $or: [
+      { email: { $regex: searchTerm, $options: 'i' } },
+      { phone: { $regex: searchTerm, $options: 'i' } }
+    ]
+  }).select("_id name email phone");
+
+  if (users.length === 0) {
+    throw new AppError(httpStatus.NOT_FOUND, "No users found");
+  }
+
+  return users;
+};
+
+
 export const UserServices = {
   createUser,
   getAllUsers,
   getUserById,
+  searchUsers,
   getMe,
   updateUser,
 };

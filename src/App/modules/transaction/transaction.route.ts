@@ -3,7 +3,7 @@ import { TransactionControllers } from "./transaction.controller";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { checkAuth } from "../../middlewares/checkAuth";
 import { Role } from "../user/user.interface";
-import { cashInOutZodSchema, transactionZodSchema } from "./transaction.validation";
+import {  cashInZodSchema, cashOutZodSchema, transactionZodSchema } from "./transaction.validation";
 
 const router = Router();
 
@@ -27,14 +27,14 @@ router.post(
 );
 router.post(
     "/cash-in",
-    validateRequest(cashInOutZodSchema),
+    validateRequest(cashInZodSchema),
     checkAuth(Role.AGENT),
     TransactionControllers.cashIn
 );
 router.post(
     "/cash-out",
-    validateRequest(cashInOutZodSchema),
-    checkAuth(Role.AGENT),
+    validateRequest(cashOutZodSchema),
+    checkAuth(Role.USER),
     TransactionControllers.cashOut
 );
 router.get("/history", checkAuth(Role.USER, Role.AGENT, Role.ADMIN), TransactionControllers.getTransactionHistory);

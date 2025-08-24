@@ -76,10 +76,26 @@ const updateUser = catchAsync(async (req: Request, res: Response, next: NextFunc
   });
 });
 
+const searchUsers = catchAsync(async (req: Request, res: Response) => {
+  const { searchTerm } = req.query as { searchTerm: string };
+
+  const users = await UserServices.searchUsers(searchTerm);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Users retrieved successfully",
+    data: users,
+  });
+});
+
+
+
 export const UserControllers = {
   createUser,
   getAllUsers,
   getUserById,
+  searchUsers,
   getMe,
   updateUser,
 };

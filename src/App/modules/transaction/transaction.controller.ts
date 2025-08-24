@@ -86,10 +86,9 @@ const cashOut = catchAsync(async (req: Request, res: Response, next: NextFunctio
     throw new Error("User not logged in.");
   }
   const user = req.user as AuthenticatedUser;
-  const agentId = user.userId;
-  const { userId, amount } = req.body;
+  const userId = user.userId;
+  const { agentId, amount } = req.body;
   const transaction = await TransactionServices.cashOut(agentId, userId, amount);
-
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
@@ -98,21 +97,21 @@ const cashOut = catchAsync(async (req: Request, res: Response, next: NextFunctio
   });
 });
 
-const getTransactionHistory = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    throw new Error("User not logged in.");
-  }
+const getTransactionHistory = catchAsync(async (req: Request, res: Response) => {
   const user = req.user as AuthenticatedUser;
   const userId = user.userId;
-  const transactions = await TransactionServices.getTransactionHistory(userId);
+
+  const result = await TransactionServices.getTransactionHistory(userId, req.query as Record<string, string>);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: "Transaction history retrieved successfully",
-    data: transactions,
+    data: result.data,
+    meta: result.meta,
   });
 });
+
 
 export const TransactionControllers = {
     topUp,

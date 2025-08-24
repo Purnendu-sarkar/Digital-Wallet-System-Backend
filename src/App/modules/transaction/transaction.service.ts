@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { envVars } from "../../config/env";
 import httpStatus from "http-status-codes";
 import AppError from "../../errorHelpers/AppError";
@@ -132,6 +133,10 @@ const withdraw = async (userId: string, amount: number) => {
 };
 
 const sendMoney = async (senderId: string, receiverId: string, amount: number) => {
+    if (senderId === receiverId) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Cannot send money to yourself");
+    }
+
     const sender = await User.findById(senderId);
     const receiver = await User.findById(receiverId);
     if (!sender || !receiver) {
@@ -143,6 +148,11 @@ const sendMoney = async (senderId: string, receiverId: string, amount: number) =
     if (sender.wallet.isBlocked || receiver.wallet.isBlocked) {
         throw new AppError(httpStatus.BAD_REQUEST, "Sender or receiver wallet is blocked");
     }
+
+    if (receiver.role !== Role.USER) {
+        throw new AppError(httpStatus.FORBIDDEN, "Money can only be sent to normal users");
+    }
+
 
     const { fee } = calculateFeeAndCommission(amount, TransactionType.SEND_MONEY);
     const totalDeduction = amount + fee;
@@ -179,6 +189,9 @@ const cashIn = async (agentId: string, userId: string, amount: number) => {
     const user = await User.findById(userId);
     if (!agent || !user) {
         throw new AppError(httpStatus.NOT_FOUND, "Agent or user not found");
+    }
+    if (user.role !== Role.USER) {
+        throw new AppError(httpStatus.FORBIDDEN, "Cash-in can only be done to users");
     }
     if (agent.isDeleted || user.isDeleted) {
         throw new AppError(httpStatus.BAD_REQUEST, "Agent or user is deleted");
@@ -228,7 +241,10 @@ const cashOut = async (agentId: string, userId: string, amount: number) => {
     if (agent.isDeleted || user.isDeleted) {
         throw new AppError(httpStatus.BAD_REQUEST, "Agent or user is deleted");
     }
-    if (agent.role !== Role.AGENT || agent.agentApprovalStatus !== "APPROVED") {
+    if (agent.role !== Role.AGENT) {
+        throw new AppError(httpStatus.FORBIDDEN, "Only agents can perform cash-out");
+    }
+    if (agent.role === Role.AGENT && agent.agentApprovalStatus !== "APPROVED") {
         throw new AppError(httpStatus.FORBIDDEN, "Agent is not approved");
     }
     if (user.wallet.isBlocked) {
@@ -266,27 +282,54 @@ const cashOut = async (agentId: string, userId: string, amount: number) => {
     return transaction;
 };
 
-const getTransactionHistory = async (userId: string) => {
+const getTransactionHistory = async (userId: string, query: Record<string, string>) => {
     const user = await User.findById(userId);
     if (!user || user.isDeleted) {
         throw new AppError(httpStatus.NOT_FOUND, "User not found or deleted");
     }
-    let transactions;
+
+    // pagination setup
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    let filter: any = {};
     if (user.role === Role.ADMIN) {
-        transactions = await Transaction.find({})
-            .populate("sender", "name email")
-            .populate("receiver", "name email")
-            .populate("agent", "name email")
-            .sort({ createdAt: -1 });
+        filter = {};
     } else {
-        transactions = await Transaction.find({
+        filter = {
             $or: [{ sender: userId }, { receiver: userId }, { agent: userId }],
-        })
-            .populate("sender", "name email")
-            .populate("receiver", "name email")
-            .populate("agent", "name email")
-            .sort({ createdAt: -1 });
+        };
     }
+
+
+    if (query.startDate || query.endDate) {
+        filter.createdAt = {};
+        if (query.startDate) filter.createdAt.$gte = moment(query.startDate).startOf('day').toDate();
+        if (query.endDate) filter.createdAt.$lte = moment(query.endDate).endOf('day').toDate();
+    }
+    if (query.type) {
+        filter.type = query.type;
+    }
+    if (query.status) {
+        filter.status = query.status;
+    }
+    if (query.minAmount || query.maxAmount) {
+        filter.amount = {};
+        if (query.minAmount) filter.amount.$gte = Number(query.minAmount);
+        if (query.maxAmount) filter.amount.$lte = Number(query.maxAmount);
+    }
+
+    const total = await Transaction.countDocuments(filter);
+    const totalPage = Math.ceil(total / limit);
+
+    const transactions = await Transaction.find(filter)
+        .populate("sender", "name email")
+        .populate("receiver", "name email")
+        .populate("agent", "name email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
 
     const totalTransactions = transactions.length;
     const totalCommission = user.role === Role.AGENT
@@ -295,13 +338,54 @@ const getTransactionHistory = async (userId: string) => {
 
     return {
         meta: {
-            totalTransactions: totalTransactions,
-            totalCommission: user.role === Role.AGENT ? totalCommission : undefined,
+            page,
+            limit,
+            total,
+            totalPage,
+            totalTransactions,
+            totalCommission: user.role !== Role.USER ? totalCommission : undefined,
         },
         data: transactions,
-
     };
 };
+
+
+// const getTransactionHistory = async (userId: string) => {
+//     const user = await User.findById(userId);
+//     if (!user || user.isDeleted) {
+//         throw new AppError(httpStatus.NOT_FOUND, "User not found or deleted");
+//     }
+//     let transactions;
+//     if (user.role === Role.ADMIN) {
+//         transactions = await Transaction.find({})
+//             .populate("sender", "name email")
+//             .populate("receiver", "name email")
+//             .populate("agent", "name email")
+//             .sort({ createdAt: -1 });
+//     } else {
+//         transactions = await Transaction.find({
+//             $or: [{ sender: userId }, { receiver: userId }, { agent: userId }],
+//         })
+//             .populate("sender", "name email")
+//             .populate("receiver", "name email")
+//             .populate("agent", "name email")
+//             .sort({ createdAt: -1 });
+//     }
+
+//     const totalTransactions = transactions.length;
+//     const totalCommission = user.role === Role.AGENT
+//         ? transactions.reduce((sum, tx) => sum + (tx.commission || 0), 0)
+//         : 0;
+
+//     return {
+//         meta: {
+//             totalTransactions: totalTransactions,
+//             totalCommission: user.role === Role.AGENT ? totalCommission : undefined,
+//         },
+//         data: transactions,
+
+//     };
+// };
 
 export const TransactionServices = {
     topUp,
