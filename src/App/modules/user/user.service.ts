@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-dynamic-delete */
 import bcryptjs from "bcryptjs";
 import httpStatus from "http-status-codes";
 import { JwtPayload } from "jsonwebtoken";
@@ -5,6 +6,12 @@ import AppError from "../../errorHelpers/AppError";
 import { IAuthProvider, IUser, Role } from "./user.interface";
 import { User } from "./user.model";
 import { envVars } from "../../config/env";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { excludeField } from "../../constants";
+
+
+const userSearchableFields = ["name", "email", "role"];
+
 
 const createUser = async (payload: Partial<IUser>) => {
   // if (!payload) {
@@ -43,15 +50,37 @@ const createUser = async (payload: Partial<IUser>) => {
   return user;
 };
 
-const getAllUsers = async () => {
-  const users = await User.find({ isDeleted: false });
-  const totalUsers = await User.countDocuments({ isDeleted: false });
-  return {
-    data: users,
-    meta: {
-      total: totalUsers,
-    },
-  };
+const getAllUsers = async (query: Record<string, string>) => {
+  const filter = { ...query };
+
+  for (const field of excludeField) {
+    delete filter[field];
+  }
+
+  if (filter.role && filter.role !== "All") {
+    if (!Object.values(Role).includes(filter.role as Role)) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Invalid role: ${filter.role}. Valid roles are: ${Object.values(Role).join(", ")}`
+      );
+    }
+  } else {
+    delete filter.role;
+  }
+
+  const queryBuilder = new QueryBuilder(User.find(), query)
+    .filter()
+    .search(userSearchableFields)
+    .sort()
+    .fields()
+    .paginate();
+
+  const [data, meta] = await Promise.all([
+    queryBuilder.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return { data, meta };
 };
 
 const getMe = async (userId: string) => {
