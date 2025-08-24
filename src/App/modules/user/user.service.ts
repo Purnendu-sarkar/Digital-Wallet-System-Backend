@@ -68,7 +68,19 @@ const getAllUsers = async (query: Record<string, string>) => {
     delete filter.role;
   }
 
-  const queryBuilder = new QueryBuilder(User.find(), query)
+  const validAgentStatuses = ["PENDING", "APPROVED", "SUSPENDED"];
+  if (filter.agentApprovalStatus && filter.agentApprovalStatus !== "All" && filter.agentApprovalStatus !== "") {
+    if (!validAgentStatuses.includes(filter.agentApprovalStatus as string)) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Invalid agent approval status: ${filter.agentApprovalStatus}. Valid statuses are: ${validAgentStatuses.join(", ")}`
+      );
+    }
+  } else {
+    delete filter.agentApprovalStatus;
+  }
+
+  const queryBuilder = new QueryBuilder(User.find(filter), query)
     .filter()
     .search(userSearchableFields)
     .sort()
