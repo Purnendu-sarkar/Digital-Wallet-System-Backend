@@ -83,6 +83,16 @@ const getAllUsers = async (query: Record<string, string>) => {
   return { data, meta };
 };
 
+const getUserById = async (userId: string) => {
+  const user = await User.findById(userId).select("-password");
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User Not Found");
+  }
+  return {
+    data: user,
+  };
+}
+
 const getMe = async (userId: string) => {
   const user = await User.findById(userId).select("-password");
   return {
@@ -114,6 +124,7 @@ const updateUser = async (userId: string, payload: Partial<IUser>, decodedToken:
 export const UserServices = {
   createUser,
   getAllUsers,
+  getUserById,
   getMe,
   updateUser,
 };

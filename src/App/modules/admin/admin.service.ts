@@ -19,6 +19,7 @@ const unblockWallet = async (userId: string) => {
         throw new AppError(httpStatus.NOT_FOUND, "User not found");
     }
     user.wallet.isBlocked = false;
+    //user.isActive = false;
     await user.save();
     return user;
 };
