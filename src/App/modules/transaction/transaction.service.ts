@@ -132,6 +132,10 @@ const withdraw = async (userId: string, amount: number) => {
 };
 
 const sendMoney = async (senderId: string, receiverId: string, amount: number) => {
+    if (senderId === receiverId) {
+        throw new AppError(httpStatus.BAD_REQUEST, "Cannot send money to yourself");
+    }
+
     const sender = await User.findById(senderId);
     const receiver = await User.findById(receiverId);
     if (!sender || !receiver) {
@@ -143,6 +147,11 @@ const sendMoney = async (senderId: string, receiverId: string, amount: number) =
     if (sender.wallet.isBlocked || receiver.wallet.isBlocked) {
         throw new AppError(httpStatus.BAD_REQUEST, "Sender or receiver wallet is blocked");
     }
+
+    if (receiver.role !== Role.USER) {
+        throw new AppError(httpStatus.FORBIDDEN, "Money can only be sent to normal users");
+    }
+
 
     const { fee } = calculateFeeAndCommission(amount, TransactionType.SEND_MONEY);
     const totalDeduction = amount + fee;
@@ -179,6 +188,9 @@ const cashIn = async (agentId: string, userId: string, amount: number) => {
     const user = await User.findById(userId);
     if (!agent || !user) {
         throw new AppError(httpStatus.NOT_FOUND, "Agent or user not found");
+    }
+    if (user.role !== Role.USER) {
+        throw new AppError(httpStatus.FORBIDDEN, "Cash-in can only be done to users");
     }
     if (agent.isDeleted || user.isDeleted) {
         throw new AppError(httpStatus.BAD_REQUEST, "Agent or user is deleted");
@@ -228,7 +240,10 @@ const cashOut = async (agentId: string, userId: string, amount: number) => {
     if (agent.isDeleted || user.isDeleted) {
         throw new AppError(httpStatus.BAD_REQUEST, "Agent or user is deleted");
     }
-    if (agent.role !== Role.AGENT || agent.agentApprovalStatus !== "APPROVED") {
+    if (agent.role !== Role.AGENT) {
+        throw new AppError(httpStatus.FORBIDDEN, "Only agents can perform cash-out");
+    }
+    if (agent.role === Role.AGENT && agent.agentApprovalStatus !== "APPROVED") {
         throw new AppError(httpStatus.FORBIDDEN, "Agent is not approved");
     }
     if (user.wallet.isBlocked) {

@@ -86,10 +86,10 @@ const cashOut = catchAsync(async (req: Request, res: Response, next: NextFunctio
     throw new Error("User not logged in.");
   }
   const user = req.user as AuthenticatedUser;
-  const agentId = user.userId;
-  const { userId, amount } = req.body;
+  const userId = user.userId;
+  const { agentId, amount } = req.body;
   const transaction = await TransactionServices.cashOut(agentId, userId, amount);
-
+console.log("req.user:", req.user);
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,

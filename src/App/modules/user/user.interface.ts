@@ -39,3 +39,11 @@ export interface IUser {
   wallet: IWallet;
   agentApprovalStatus?: "PENDING" | "APPROVED" | "SUSPENDED"; // Only for agents
 }
+
+
+export interface ISearchUser {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+}
