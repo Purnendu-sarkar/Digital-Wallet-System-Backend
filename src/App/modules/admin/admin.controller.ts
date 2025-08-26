@@ -83,6 +83,18 @@ const updateSystemParameters = catchAsync(async (req: Request, res: Response, ne
     });
 });
 
+
+const getStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const stats = await AdminServices.getStats(req.query as Record<string, string>);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Admin stats retrieved successfully",
+        data: stats,
+    });
+});
+
 export const AdminControllers = {
     blockWallet,
     unblockWallet,
@@ -90,4 +102,5 @@ export const AdminControllers = {
     suspendAgent,
     getPendingAgents,
     updateSystemParameters,
+    getStats,
 };
