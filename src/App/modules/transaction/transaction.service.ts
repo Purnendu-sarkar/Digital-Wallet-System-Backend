@@ -3,11 +3,12 @@ import { envVars } from "../../config/env";
 import httpStatus from "http-status-codes";
 import AppError from "../../errorHelpers/AppError";
 import { User } from "../user/user.model";
-import { TransactionStatus, TransactionType } from "./transaction.interface";
+import { IAgentOverview, IStatsQueryParams, TransactionStatus, TransactionType } from "./transaction.interface";
 import { Role } from "../user/user.interface";
 import { Transaction } from "./transaction.model";
 import moment from "moment";
 import { sendConsoleNotification, sendWebhookNotification } from "../../utils/notify";
+import { Types } from "mongoose";
 
 // Helper function to calculate fees and commissions
 const calculateFeeAndCommission = (amount: number, type: TransactionType) => {
@@ -350,42 +351,66 @@ const getTransactionHistory = async (userId: string, query: Record<string, strin
 };
 
 
-// const getTransactionHistory = async (userId: string) => {
-//     const user = await User.findById(userId);
-//     if (!user || user.isDeleted) {
-//         throw new AppError(httpStatus.NOT_FOUND, "User not found or deleted");
-//     }
-//     let transactions;
-//     if (user.role === Role.ADMIN) {
-//         transactions = await Transaction.find({})
-//             .populate("sender", "name email")
-//             .populate("receiver", "name email")
-//             .populate("agent", "name email")
-//             .sort({ createdAt: -1 });
-//     } else {
-//         transactions = await Transaction.find({
-//             $or: [{ sender: userId }, { receiver: userId }, { agent: userId }],
-//         })
-//             .populate("sender", "name email")
-//             .populate("receiver", "name email")
-//             .populate("agent", "name email")
-//             .sort({ createdAt: -1 });
-//     }
 
-//     const totalTransactions = transactions.length;
-//     const totalCommission = user.role === Role.AGENT
-//         ? transactions.reduce((sum, tx) => sum + (tx.commission || 0), 0)
-//         : 0;
+const getAgentOverview = async (userId: string, query: IStatsQueryParams): Promise<IAgentOverview> => {
+    const user = await User.findById(userId);
+    if (!user || user.isDeleted || user.role !== "AGENT" || user.agentApprovalStatus !== "APPROVED") {
+        throw new AppError(httpStatus.FORBIDDEN, "Invalid or unapproved agent");
+    }
 
-//     return {
-//         meta: {
-//             totalTransactions: totalTransactions,
-//             totalCommission: user.role === Role.AGENT ? totalCommission : undefined,
-//         },
-//         data: transactions,
+    const filter: any = {
+        agent: new Types.ObjectId(userId),
+        status: TransactionStatus.COMPLETED,
+    };
 
-//     };
-// };
+    if (query.filterType === "last7days") {
+        filter.createdAt = { $gte: moment().subtract(7, "days").startOf("day").toDate() };
+    } else if (query.filterType === "last30days") {
+        filter.createdAt = { $gte: moment().subtract(30, "days").startOf("day").toDate() };
+    } else if (query.filterType === "custom" && query.startDate && query.endDate) {
+        filter.createdAt = {
+            $gte: moment(query.startDate).startOf("day").toDate(),
+            $lte: moment(query.endDate).endOf("day").toDate(),
+        };
+    }
+
+    
+    const aggregation = await Transaction.aggregate([
+        { $match: filter },
+        {
+            $group: {
+                _id: null,
+                totalCashIn: {
+                    $sum: { $cond: [{ $eq: ["$type", TransactionType.CASH_IN] }, "$amount", 0] },
+                },
+                totalCashOut: {
+                    $sum: { $cond: [{ $eq: ["$type", TransactionType.CASH_OUT] }, "$amount", 0] },
+                },
+                totalCommission: { $sum: "$commission" },
+                totalTransactions: { $sum: 1 },
+            },
+        },
+    ]);
+
+    const summary = aggregation[0] || {
+        totalCashIn: 0,
+        totalCashOut: 0,
+        totalCommission: 0,
+        totalTransactions: 0,
+    };
+
+    const recentActivities = await Transaction.find(filter)
+        .populate("sender", "name email")
+        .populate("receiver", "name email")
+        .sort({ createdAt: -1 })
+        .limit(10);
+
+    return {
+        summary,
+        recentActivities,
+    };
+};
+
 
 export const TransactionServices = {
     topUp,
@@ -394,4 +419,5 @@ export const TransactionServices = {
     cashIn,
     cashOut,
     getTransactionHistory,
+    getAgentOverview,
 };

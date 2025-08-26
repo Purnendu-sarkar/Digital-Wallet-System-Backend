@@ -5,6 +5,7 @@ import httpStatus from "http-status-codes";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { TransactionServices } from "./transaction.service";
+import { IStatsQueryParams } from "./transaction.interface";
 
 interface AuthenticatedUser {
   userId: string;
@@ -112,12 +113,28 @@ const getTransactionHistory = catchAsync(async (req: Request, res: Response) => 
   });
 });
 
+const getAgentOverview = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user as AuthenticatedUser;
+  const userId = user.userId;
+  const result = await TransactionServices.getAgentOverview(userId, req.query as IStatsQueryParams);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    message: "Agent overview retrieved successfully",
+    data: result,
+  });
+});
+
+
+
 
 export const TransactionControllers = {
-    topUp,
-    withdraw,
-    sendMoney,
-    cashIn,
-    cashOut,
-    getTransactionHistory,
+  topUp,
+  withdraw,
+  sendMoney,
+  cashIn,
+  cashOut,
+  getTransactionHistory,
+  getAgentOverview,
 };

@@ -14,6 +14,22 @@ export enum TransactionStatus {
     REVERSED = "REVERSED",
 }
 
+export interface IAgentOverview {
+  summary: {
+    totalCashIn: number;
+    totalCashOut: number;
+    totalCommission: number;
+    totalTransactions: number;
+  };
+  recentActivities: ITransaction[];
+}
+
+export interface IStatsQueryParams {
+  filterType?: "lifetime" | "last7days" | "last30days" | "custom" | "specificDate";
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface ITransaction {
     _id?: Types.ObjectId;
     sender: Types.ObjectId;
