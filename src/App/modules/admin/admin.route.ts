@@ -3,7 +3,7 @@ import { AdminControllers } from "./admin.controller";
 import { checkAuth } from "../../middlewares/checkAuth";
 import { Role } from "../user/user.interface";
 import { validateRequest } from "../../middlewares/validateRequest";
-import { updateSystemParametersZodSchema } from "./admin.validation";
+import { statsQueryZodSchema, updateSystemParametersZodSchema } from "./admin.validation";
 
 const router = Router();
 
@@ -17,6 +17,13 @@ router.patch(
     validateRequest(updateSystemParametersZodSchema),
     checkAuth(Role.ADMIN),
     AdminControllers.updateSystemParameters
+);
+
+router.get(
+    "/stats",
+    validateRequest(statsQueryZodSchema),
+    checkAuth(Role.ADMIN),
+    AdminControllers.getStats
 );
 
 export const AdminRoutes = router;

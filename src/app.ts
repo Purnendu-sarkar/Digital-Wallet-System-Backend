@@ -15,9 +15,9 @@ app.use(cookieParser());
 app.use(express.json());
 app.set("trust proxy", 1);
 app.use(cors({
-    origin: "http://localhost:3000",
-    credentials: true,               
-  }))
+  origin: ["http://localhost:3000", "https://digital-wallet-system-frontend.vercel.app"],
+  credentials: true,
+}))
 
 app.use(
   expressSession({
@@ -35,9 +35,9 @@ app.use(passport.session());
 app.use("/api/v1", router)
 
 app.get("/", (req: Request, res: Response) => {
-    res.status(200).json({
-        message: "Welcome to Digital Wallet System Backend"
-    })
+  res.status(200).json({
+    message: "Welcome to Digital Wallet System Backend"
+  })
 })
 
 
