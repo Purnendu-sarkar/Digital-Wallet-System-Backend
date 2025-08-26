@@ -81,12 +81,12 @@ const logout = catchAsync(async (req: Request, res: Response, next: NextFunction
     httpOnly: true,
     // secure: envVars.NODE_ENV === "production",
     secure: true,
-    sameSite: "lax",
+    sameSite: "none",
   });
   res.clearCookie("refreshToken", {
     httpOnly: true,
     secure: true,
-    sameSite: "lax",
+    sameSite: "none",
   });
 
   sendResponse(res, {
