@@ -3,7 +3,7 @@ import { ITransaction, TransactionStatus, TransactionType } from "./transaction.
 
 const transactionSchema = new Schema<ITransaction>(
     {
-        sender: { type: Schema.Types.ObjectId, ref: "User", required: true },
+        sender: { type: Schema.Types.ObjectId, ref: "User"},
         receiver: { type: Schema.Types.ObjectId, ref: "User" },
         agent: { type: Schema.Types.ObjectId, ref: "User" },
         amount: { type: Number, required: true, min: 0 },

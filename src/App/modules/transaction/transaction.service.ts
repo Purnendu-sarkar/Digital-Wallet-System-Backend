@@ -217,7 +217,7 @@ const cashIn = async (agentId: string, userId: string, amount: number) => {
     await user.save();
 
     const transaction = await Transaction.create({
-        sender: user._id,
+        receiver: user._id,
         agent: agent._id,
         amount,
         fee: 0,
