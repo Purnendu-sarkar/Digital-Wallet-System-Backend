@@ -19,8 +19,8 @@ export const createUserZodSchema = z.object({
     .regex(/^(?=.*\d)/, { message: "Password must contain at least 1 number." }),
   phone: z
     .string({ message: "Phone Number must be string" })
-    .regex(/^(?:\+8801\d{9}|01\d{9})$/, {
-      message: "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
+    .regex(/^(?:\+8801[3-9]\d{8}|01[3-9]\d{8})$/, {
+      message: "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX (11 digits)",
     })
     .optional(),
   address: z
@@ -45,8 +45,8 @@ export const updateUserZodSchema = z.object({
     .optional(),
   phone: z
     .string({ message: "Phone Number must be string" })
-    .regex(/^(?:\+8801\d{9}|01\d{9})$/, {
-      message: "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
+    .regex(/^(?:\+8801[3-9]\d{8}|01[3-9]\d{8})$/, {
+      message: "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX (11 digits)",
     })
     .optional(),
   address: z

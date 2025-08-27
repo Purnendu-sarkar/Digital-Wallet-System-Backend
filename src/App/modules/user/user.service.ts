@@ -118,6 +118,10 @@ const updateUser = async (userId: string, payload: Partial<IUser>, decodedToken:
     throw new AppError(httpStatus.NOT_FOUND, "User Not Found");
   }
 
+  if (decodedToken.role !== Role.ADMIN && userId !== decodedToken.userId) {
+    throw new AppError(httpStatus.FORBIDDEN, "You are not authorized to update this profile");
+  }
+
   if (payload.role || payload.isActive || payload.isDeleted || payload.isVerified || payload.agentApprovalStatus) {
     if (decodedToken.role !== Role.ADMIN) {
       throw new AppError(httpStatus.FORBIDDEN, "You are not authorized");
