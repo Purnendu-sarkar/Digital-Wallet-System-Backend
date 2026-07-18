@@ -26,4 +26,9 @@ const transactionSchema = new Schema<ITransaction>(
     }
 );
 
+transactionSchema.index({ sender: 1, createdAt: -1 });
+transactionSchema.index({ receiver: 1, createdAt: -1 });
+transactionSchema.index({ agent: 1, createdAt: -1 });
+transactionSchema.index({ type: 1, status: 1, createdAt: -1 });
+
 export const Transaction = model<ITransaction>("Transaction", transactionSchema);

@@ -390,7 +390,7 @@ const getAgentOverview = async (userId: string, query: IStatsQueryParams): Promi
                 totalTransactions: { $sum: 1 },
             },
         },
-    ]);
+    ]).option({ hint: { agent: 1, createdAt: -1 } });
 
     const summary = aggregation[0] || {
         totalCashIn: 0,
